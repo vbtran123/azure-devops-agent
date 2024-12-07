@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-deployment
+  namespace: devops
+  labels:
+    app: devops-runner
+    azure.workload.identity/use: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-runner
+      azure.workload.identity/use: "true"
+  template:
+    metadata:
+      labels:
+        app: devops-runner
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: workload-sa
+      containers:
+      - name: devops-runner
+        image: ihsmdacrdev.azurecr.io/devops-runner:v1.0.5 # Add your ACR respository
+        command:
+        - sleep
+        args:
+        - 99d
+        env:
+        - name: AZP_URL
+          value: https://dev.azure.com/ihsmddevops
+        - name: AZP_TOKEN
+          value: "###PERSONA-ACCESS-TOKEN-FROM-AZURE-DEVOPS###"
+        - name: AZP_POOL
+          value: "ihsmdpool"
+        - name: AZP_AGENT_NAME
+          value: "agent1"
+        - name: AZP_PROJECT_NAME
+          value: "HL7Listener"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        volumeMounts:
+          - mountPath: "/home/devops"
+            name: runner-data
+      volumes:
+        - name: runner-data
+          persistentVolumeClaim:
+            claimName: devops-pvc
